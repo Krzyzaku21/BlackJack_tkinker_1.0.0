@@ -1,0 +1,6 @@
+#!/bin/bash -x
+activate () {
+    . $PWD/env/Scripts/activate
+}
+
+activate
