@@ -315,7 +315,7 @@ class Game(AbstractGame):
                     print(f'You can\'t bet {choice} here.')
                 print(f'You bet {self.dealer.deposit} chips and still have {self.human.chips}')
             print(f'You finally bet {self.dealer.deposit} coins')
-        except:
+        except ValueError:
             print('Bad value')
             self.bet_chips()
 
