@@ -172,7 +172,7 @@ class App(tk.Tk):
 
 
 class GameScore(tk.Frame):
-    """Class represents board informations on live"""
+    """Class represents board information's on live"""
 
     def __init__(self, parent, panel):
         tk.Frame.__init__(self, parent)
@@ -415,7 +415,7 @@ class OptionsFrame(tk.Frame):
         self.check_length_deck()
 
     def check_length_deck(self):
-        """Method check lenght od deck in live"""
+        """Method check length od deck in live"""
         len_int_var = tk.IntVar()
         number = self.panel.panel_deck.len_deck()
         len_int_var.set(number)
@@ -664,7 +664,7 @@ class BetFrame(tk.Frame):
 
 
 def main():
-    """funtion executed code"""
+    """function executed code"""
     app = App(None)
     app.mainloop()
 
