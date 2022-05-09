@@ -4,7 +4,7 @@ from tkinter import messagebox
 import sys
 from game import Game
 import os
-import datetime
+import time
 
 
 class Panel:
@@ -14,6 +14,8 @@ class Panel:
         self.hidden_card = None
         self.game = Game()
         self.panel_deck = self.game.deck
+        self.check_len_in_deck()
+        self.flag_is_bet = False
 
     def get_link(self, card):
         sign = None
@@ -38,14 +40,11 @@ class Panel:
         if self.game.deck.len_deck() < 25:
             self.game.deck = self.game.deck_copy
             self.panel_deck = self.game.deck
-        # card_len = self.panel_deck.len_deck()
-        # print('card len', card_len)
-        # print(self.game.deck)
         return self.panel_deck
 
-    def take_card(self, player, deck):
+    def take_card(self, player, some_deck):
         if len(player.player_hand) < 13:
-            player.player_take_card(deck.get_card())
+            player.player_take_card(some_deck.get_card())
             if player.__class__.__name__ == "Dealer":
                 self.dealer_card = [self.get_link(card) for card in player.player_hand]
             else:
@@ -63,11 +62,6 @@ class Panel:
             self.take_card(self.game.human, self.panel_deck)
             self.take_card(self.game.human, self.panel_deck)
 
-        print(len(self.game.dealer.player_hand))
-        print(len(self.game.human.player_hand))
-        print(len(self.dealer_card))
-        print(len(self.human_card))
-
 
 class DefaultFrame(tk.Frame):
     def __init__(self, parent):
@@ -84,27 +78,69 @@ class App(tk.Tk):
         menubar = MenuBar(self, self.panel)
         self.config(menu=menubar)
         self.main_widgets()
+        self.app_status = None
+        self.play_game()
+        self.end_game_flag = False
 
-    def start(self):
+    def default_game(self):
+        game = self.panel.game
+        game.OPTIONS = game.OPTIONS.fromkeys(game.OPTIONS.keys(), False)
+        self.widget_frame_options.buttons.options_button_state()
+
+        def func():
+            time.sleep(3)
+            if self.end_game_flag == True:
+                game.set_all_options_default()
+                self.panel.human_card = []
+                self.panel.dealer_card = []
+                self.end_game_flag = False
+
+        self.after(1000, func)
+        self.panel.check_len_in_deck()
+
+    def continue_game(self):
+        self.widget_frame_bet.button["state"] = "normal"
+        self.panel.start()
+
+    def start_game(self):
         self.panel.start()
         self.widget_frame_human = HumanFrame(self, self.panel)
         self.widget_frame_dealer = DealerFrame(self, self.panel)
         self.widget_frame_human.grid(row=1, column=0)
         self.widget_frame_dealer.grid(row=4, column=0)
-        self.widget_frame_bet = BetFrame(self, self.panel)
-        self.widget_frame_bet.grid(row=6, column=0)
-        self.widget_frame_bet.bet_widget()
-        # self.play()
 
-    def check_blackjack_status(self):
+    def game_status(self):
         game = self.panel.game
-        if game.dealer.deposit < 0:
-            messagebox.showinfo("First you need bet some coins")
-        else:
-            self.widget_frame_bet.destroy()
+        game.status_game(game.dealer, game.human)
+        self.app_status = game.status
+        self.widget_frame_options.buttons.widgets()
+        self.widget_frame_options.buttons.options_button_state()
+        self.play_game()
+        self.default_game()
 
-    def play(self):
-        pass
+    def play_game(self):
+        game = self.panel.game
+        self.app_status = game.status
+        if self.app_status is None:
+            self.widget_frame_bet = BetFrame(self, self.panel)
+            self.widget_frame_bet.grid(row=6, column=0)
+            self.widget_frame_bet.bet_widget()
+        if self.app_status == "LOSE":
+            game.dealer.deposit = 0
+            if game.human.chips == 100:
+                messagebox.showinfo(
+                    title="Game info",
+                    message="You lose and start again",
+                )
+                game.human.chips = 1000
+                self.play_game()
+            else:
+                self.continue_game()
+        if self.app_status == "DRAW":
+            self.continue_game()
+        if self.app_status == "WIN":
+            game.human.chips += game.dealer.deposit * 2
+            self.continue_game()
 
     def main_widgets(self):
         game = self.panel.game
@@ -131,16 +167,54 @@ class GameScore(tk.Frame):
         self.height = 2
         self.check_human_score()
         self.check_dealer_score()
+        self.human_show_chips()
+        self.game_show_result()
+        self.dealer_show_deposit()
 
-        self.widget_scored = tk.Label(
+    def human_show_chips(self):
+        int_var = tk.IntVar()
+        chips = self.panel.game.human.chips
+        int_var.set(f"Human chips: {chips - 100}")
+        self.widget_score_human_chips = tk.Label(
             self,
-            text="score",
+            textvariable=int_var,
             fg="white",
-            bg="black",
-            width=self.width - 1,
+            bg="grey",
+            width=(self.width - 3) // 3,
             height=self.height,
         )
-        self.widget_scored.grid(row=0, column=1)
+        self.widget_score_human_chips.grid(row=0, column=1)
+        self.parent.after(1000, self.human_show_chips)
+
+    def game_show_result(self):
+        int_var = tk.IntVar()
+        result = self.panel.game.status
+        int_var.set(f"{result}")
+        self.widget_game_result = tk.Label(
+            self,
+            textvariable=int_var,
+            fg="white",
+            bg="red",
+            width=(self.width - 3) // 3,
+            height=self.height,
+        )
+        self.widget_game_result.grid(row=0, column=2)
+        self.parent.after(1000, self.game_show_result)
+
+    def dealer_show_deposit(self):
+        int_var = tk.IntVar()
+        deposit = self.panel.game.dealer.deposit
+        int_var.set(f"Deposit: {deposit}")
+        self.widget_score_dealer_deposit = tk.Label(
+            self,
+            textvariable=int_var,
+            fg="white",
+            bg="grey",
+            width=(self.width - 3) // 3,
+            height=self.height,
+        )
+        self.widget_score_dealer_deposit.grid(row=0, column=3)
+        self.parent.after(1000, self.dealer_show_deposit)
 
     def check_human_score(self):
         int_var = tk.IntVar()
@@ -169,7 +243,7 @@ class GameScore(tk.Frame):
             width=self.width,
             height=self.height,
         )
-        self.widget_dealer_score.grid(row=0, column=2)
+        self.widget_dealer_score.grid(row=0, column=4)
         self.parent.after(1000, self.check_dealer_score)
 
 
@@ -185,14 +259,25 @@ class MenuBar(tk.Menu):
         fileMenu.add_command(label="Exit", underline=2, command=self.quit)
 
     def start(self):
-        # print(self.panel.panel_deck)
-        # print(self.panel.panel_deck.len_deck())
-        # self.panel.start()
-        self.parent.start()
-        # print(self.panel.game.dealer.player_hand)
-        # print(self.panel.game.human.player_hand)
-        # print(self.panel.dealer_card)
-        # print(self.panel.human_card)
+        game = self.panel.game
+        self.parent.end_game_flag = True
+        game.human.chips = 1000
+        game.dealer.deposit = 0
+
+        self.parent.game_status()
+
+        def menu_deck():
+            panel_deck2 = game.deck
+            if game.deck.len_deck() < 52:
+                game.deck = game.deck_copy
+                panel_deck2 = game.deck
+            return panel_deck2
+
+        self.panel.panel_deck = menu_deck()
+        self.widget_frame_human = HumanFrame(self, self.panel)
+        self.widget_frame_dealer = DealerFrame(self, self.panel)
+        self.widget_frame_human.grid(row=1, column=0)
+        self.widget_frame_dealer.grid(row=4, column=0)
 
     def quit(self):
         sys.exit(0)
@@ -200,13 +285,13 @@ class MenuBar(tk.Menu):
 
 class CardLabel(tk.Label):
     def __init__(self, parent, panel):
-        tk.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent, bg="green")
         self.parent = parent
         self.panel = panel
 
     def show_card(self, box):
         for index, x in enumerate(box):
-            label = tk.Label(self, image=x)
+            label = tk.Label(self, image=x, bg="green")
             label.grid(row=1, column=index)
 
     def remove_card(self):
@@ -236,22 +321,17 @@ class HumanFrame(tk.Frame):
         self.widgets()
 
     def widgets(self):
-        button = tk.Button(self, text="add", command=self.get_human_card)
-        button.grid(column=0, row=1)
-        button = tk.Button(self, text="del", command=self.del_human_cards)
-        button.grid(column=1, row=1)
         self.card_label = CardLabel(self, self.panel)
         self.card_label.show_card(self.panel.human_card)
         self.card_label.grid()
 
-    def del_human_cards(self):
+    def del_human_card(self):
         self.card_label.remove_human_card()
         self.panel.check_len_in_deck()
 
     def get_human_card(self):
         self.card_label.get_card(self.panel.game.human)
         self.card_label.show_card(self.panel.human_card)
-        print(self.panel.game.human.points)
 
 
 class DealerFrame(tk.Frame):
@@ -262,10 +342,6 @@ class DealerFrame(tk.Frame):
         self.widgets()
 
     def widgets(self):
-        button = tk.Button(self, text="del", command=self.del_dealer_cards)
-        button.grid(column=0, row=1)
-        button = tk.Button(self, text="add", command=self.get_dealer_card)
-        button.grid(column=1, row=1)
         self.card_label = CardLabel(self, self.panel)
         self.card_label.show_card(self.panel.dealer_card)
         self.card_label.grid()
@@ -276,73 +352,167 @@ class DealerFrame(tk.Frame):
     def get_dealer_card(self):
         self.card_label.get_card(self.panel.game.dealer)
         self.card_label.show_card(self.panel.dealer_card)
-        print(self.panel.game.dealer.points)
 
 
 class OptionsFrame(tk.Frame):
     def __init__(self, parent, panel):
-        tk.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent, bg="white")
         self.parent = parent
         self.panel = panel
         self.widgets()
 
     def widgets(self):
-        buttons = OptionsButtons(self, self.panel, width=80)
-        buttons.grid(column=0, row=0)
-        cards_left = tk.Label(self, text="CARDS LEFT", bg="yellow", width=63)
-        cards_left.grid(column=1, row=0)
-        options_label = tk.Label(self, bg="black", width=86)
-        options_label.grid(column=0, rowspan=5)
+        self.buttons = OptionsButtons(self, self.panel, width=80)
+        self.buttons.grid(column=0, row=0)
+        self.cards_left = tk.Label(self, text="CARDS LEFT", bg="yellow", width=63)
+        self.cards_left.grid(column=1, row=0)
+        self.options_label = tk.Label(self, bg="black", width=86)
+        self.options_label.grid(column=0, rowspan=5)
         self.check_length_deck()
 
     def check_length_deck(self):
         len_int_var = tk.IntVar()
-        number = self.panel.game.deck.len_deck()
-        if number != 52:
-            len_int_var.set(number)
-            cards_left = tk.Label(
-                self,
-                textvariable=len_int_var,
-                bg="black",
-                width=63,
-                fg="white",
-            )
-            cards_left.grid(column=1, row=1)
+        number = self.panel.panel_deck.len_deck()
+        len_int_var.set(number)
+        cards_left = tk.Label(
+            self,
+            textvariable=len_int_var,
+            bg="black",
+            width=63,
+            fg="white",
+        )
+        cards_left.grid(column=1, row=1)
         self.parent.after(1000, self.check_length_deck)
 
 
 class OptionsButtons(tk.Button):
     def __init__(self, parent, panel, width):
-        tk.Frame.__init__(self, parent, bg="pink", width=width)
+        tk.Frame.__init__(self, parent, width=width, bg="white")
         self.parent = parent
         self.panel = panel
         self.width = width
-        self.widgets()
 
     def options(self):
         game = self.panel.game
-        # game.dealer.deposit = 100
         game.options(game.dealer, game.human)
-        print(game.OPTIONS)
 
     def widgets(self):
+        self.options()
         widgets_width = self.width // 5
-        button_hit = tk.Button(
-            self, bg="red", text="HIT", width=widgets_width, command=self.options
+        self.button_hit = tk.Button(
+            self,
+            bg="red",
+            text="HIT",
+            width=widgets_width,
+            command=self.hit,
+            state="disabled",
         )
-        button_hit.grid(column=0, row=0)
-        button_stand = tk.Button(self, bg="red", text="STAND", width=widgets_width)
-        button_stand.grid(column=1, row=0)
-        button_insurance = tk.Button(
-            self, bg="red", text="INSURANCE", width=widgets_width
+        self.button_stand = tk.Button(
+            self,
+            bg="red",
+            text="STAND",
+            width=widgets_width,
+            command=self.stand,
+            state="disabled",
         )
-        button_insurance.grid(column=2, row=0)
-        button_doubledown = tk.Button(
-            self, bg="red", text="DOUBLE_DOWN", width=widgets_width
+        self.button_insurance = tk.Button(
+            self,
+            bg="red",
+            text="INSURANCE",
+            width=widgets_width,
+            command=self.insurance,
+            state="disabled",
         )
-        button_doubledown.grid(column=3, row=0)
-        button_split = tk.Button(self, bg="red", text="SPLIT", width=widgets_width)
-        button_split.grid(column=4, row=0)
+        self.button_doubledown = tk.Button(
+            self,
+            bg="red",
+            text="DOUBLE_DOWN",
+            width=widgets_width,
+            command=self.double_down,
+            state="disabled",
+        )
+        self.button_split = tk.Button(
+            self,
+            bg="red",
+            text="SPLIT",
+            width=widgets_width,
+            command=self.split,
+            state="disabled",
+        )
+        self.button_hit.grid(column=0, row=0)
+        self.button_stand.grid(column=1, row=0)
+        self.button_insurance.grid(column=2, row=0)
+        self.button_doubledown.grid(column=3, row=0)
+        self.button_split.grid(column=4, row=0)
+
+    def options_button_state(self):
+        game = self.panel.game
+        for key, value in game.OPTIONS.items():
+            if key == "HIT":
+                if value == True:
+                    self.button_hit["state"] = "normal"
+                else:
+                    self.button_hit["state"] = "disabled"
+            if key == "STAND":
+                if value == True:
+                    self.button_stand["state"] = "normal"
+                else:
+                    self.button_stand["state"] = "disabled"
+
+            if key == "INSURANCE":
+                if value == True:
+                    self.button_insurance["state"] = "normal"
+                else:
+                    self.button_insurance["state"] = "disabled"
+            if key == "DOUBLE_DOWN":
+                if value == True:
+                    self.button_doubledown["state"] = "normal"
+                else:
+                    self.button_doubledown["state"] = "disabled"
+            if key == "SPLIT":
+                if value == True:
+                    self.button_split["state"] = "normal"
+                else:
+                    self.button_split["state"] = "disabled"
+
+    def hit(self):
+        parent = self.parent.parent.widget_frame_human
+        parent.get_human_card()
+        if self.panel.game.human.points >= 21:
+            self.stand()
+
+    def stand(self):
+        self.parent.parent.end_game_flag = True
+        parent = self.parent.parent.widget_frame_dealer
+        if self.panel.game.human.points < 21:
+            while self.panel.game.dealer.points < self.panel.game.human.points:
+                parent.get_dealer_card()
+        self.parent.parent.game_status()
+
+    def insurance(self):
+        game = self.panel.game
+        parent = self.parent.parent.widget_frame_dealer
+        parent.get_dealer_card()
+        new_chips = game.dealer.deposit // 2
+        game.dealer.deposit = game.dealer.deposit + new_chips
+        self.button_insurance["state"] = "disabled"
+        self.parent.parent.end_game_flag = True
+        self.parent.parent.game_status()
+
+    def double_down(self):
+        game = self.panel.game
+        game.dealer.deposit = game.dealer.deposit * 2
+        self.button_doubledown["state"] = "disabled"
+        if self.panel.game.human.points >= 21:
+            self.stand()
+
+    def split(self):
+        parent = self.parent.parent.widget_frame_human
+        parent.del_human_card()
+        parent.get_human_card()
+        self.button_split["state"] = "disabled"
+        self.parent.parent.end_game_flag = True
+        self.parent.parent.game_status()
 
 
 class BetFrame(tk.Frame):
@@ -350,7 +520,7 @@ class BetFrame(tk.Frame):
         tk.Frame.__init__(self, parent, bg="gray")
         self.parent = parent
         self.panel = panel
-        # self.bet_widget()
+        self.start_flag = True
 
     def bet_widget(self):
         game = self.panel.game
@@ -363,39 +533,68 @@ class BetFrame(tk.Frame):
                 self, textvariable=coins_int_var, fg="black", bg="white", width=50
             )
             coins_get = coins_int_var.get()
-            if game.human.chips >= 100:
+            if game.human.chips >= 0:
                 if coins_get in bet_options:
-                    if game.human.chips > coins_get:
-                        game.human.chips -= coins_get
-                        game.dealer.deposit += coins_get
-                        if game.human.chips == 100:
-                            message_string_var.set(
-                                f"You can't bet more chips {game.dealer.deposit}, bet over"
+                    if coins_get == 0:
+                        if self.start_flag == False:
+                            messagebox.showinfo(
+                                title="Chips info",
+                                message="First you need bet some coins",
                             )
                         else:
-                            message_string_var.set(
-                                f"You bet {game.dealer.deposit} chips and still have {game.human.chips}"
-                            )
+                            self.start_flag = False
+                    else:
+
+                        if game.human.chips > coins_get:
+                            game.human.chips -= coins_get
+                            game.dealer.deposit += coins_get
+                            if coins_get == 0:
+                                self.button_flag = True
+                            if game.human.chips == 100:
+                                message_string_var.set(
+                                    f"You can't bet more chips {game.dealer.deposit}, bet over"
+                                )
+                            else:
+                                message_string_var.set(
+                                    f"You bet {game.dealer.deposit} chips and still have {game.human.chips}"
+                                )
                 else:
-                    elements = "".join(
-                        filter(lambda x: x not in bet_options, bet_options)
-                    )
+                    element = ", ".join(str(x) for x in bet_options[1:])
+                    chips = game.human.chips
                     message_string_var.set(
-                        f"You can't bet {coins_get} here, you can only bet {elements}\nYou bet {game.dealer.deposit} chips and still have {game.human.chips}"
+                        f"You can't bet {coins_get} here, you can only bet {element}\nYou bet {game.dealer.deposit} chips and still have {chips -100}"
                     )
-            message_get = message_string_var.get()
             message = tk.Label(
                 self, textvariable=message_string_var, width=50, bg="gray"
             )
-            print(coins_get)
-            print(message_get)
             return coins, message
 
-        button = tk.Button(self, command=change, bg="yellow", text="BET", width=50)
-        coin, message = change()
-        message.grid(column=0, row=0)
-        coin.grid(column=1, row=0, sticky=tk.W, padx=20)
-        button.grid(column=2, row=0)
+        def change_bet_button():
+            if self.panel.game.dealer.deposit != 0:
+                self.button["state"] = "disable"
+                self.parent.start_game()
+                self.parent.widget_frame_options.buttons.widgets()
+                self.parent.widget_frame_options.buttons.options_button_state()
+
+        self.button = tk.Button(self, command=change, bg="yellow", text="BET", width=24)
+        self.button2 = tk.Button(
+            self, command=change_bet_button, bg="red", text="START", width=24
+        )
+        self.coin, self.message = change()
+        self.methods_bet()
+
+    def create_bet(self):
+
+        self.message.grid(column=0, row=0)
+        self.coin.grid(column=1, row=0, sticky=tk.W, padx=20)
+        self.button.grid(column=2, row=0)
+        self.button2.grid(column=3, row=0)
+
+    def methods_bet(self):
+        game = self.panel.game
+        if game.dealer.deposit == 0:
+            self.create_bet()
+        self.parent.after(1000, self.methods_bet)
 
 
 def main():

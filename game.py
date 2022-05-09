@@ -69,6 +69,7 @@ class AbstractGame(ABC):
     @abstractmethod
     def show_cards_points(self, player: Player):
         """Method print cards styles and players points"""
+
     @abstractmethod
     def select_option(self):
         """Selected options from OPTIONS"""
@@ -90,11 +91,11 @@ class Game(AbstractGame):
     """Class Game"""
 
     OPTIONS = {
-        'INSURANCE': False,
-        'DOUBLE_DOWN': False,
-        'HIT': False,
-        'STAND': False,
-        'SPLIT': False,
+        "INSURANCE": False,
+        "DOUBLE_DOWN": False,
+        "HIT": False,
+        "STAND": False,
+        "SPLIT": False,
     }
 
     def __init__(self):
@@ -127,67 +128,100 @@ class Game(AbstractGame):
     def options(self, dealer, human):
         if self.dealer.deposit > 0:
             if human.points < 21:
-                self.OPTIONS['HIT'] = True
-                self.OPTIONS['STAND'] = True
-                human_rank_hand = [
-                    card.rank for card in human.player_hand]
+                self.OPTIONS["HIT"] = True
+                self.OPTIONS["STAND"] = True
+                human_rank_hand = [card.rank for card in human.player_hand]
                 dealer_rank_hand = [
-                    card.rank for card in dealer.player_hand if card.rank is not None]
+                    card.rank for card in dealer.player_hand if card.rank is not None
+                ]
                 if len(human_rank_hand) == 2:
-                    if human.points == 9 and dealer.points in list(map(int, range(3, 7))) or \
-                            human.points == 10 and \
-                        dealer.points in list(map(int, range(2, 10))) or \
-                        human.points == 11 and dealer.points in list(map(int, range(2, 11))) or \
-                            all(x in human_rank_hand for x in ['A', '2']) and \
-                            any(x in dealer_rank_hand for x in ['5', '6']) or \
-                            all(x in human_rank_hand for x in ['A', '3']) and \
-                            any(x in dealer_rank_hand for x in ['5', '6']) or \
-                            all(x in human_rank_hand for x in ['A', '4']) and \
-                            any(x in dealer_rank_hand for x in ['4', '5', '6']) or \
-                            all(x in human_rank_hand for x in ['A', '5']) and \
-                            any(x in dealer_rank_hand for x in ['4', '5', '6']) or \
-                            all(x in human_rank_hand for x in ['A', '6']) and \
-                            any(x in dealer_rank_hand for x in ['3', '4', '5', '6']) or \
-                            all(x in human_rank_hand for x in ['A', '7']) and \
-                            any(x in dealer_rank_hand for x in ['3', '4', '5', '6']) or \
-                            human_rank_hand == ['5', '5']:
-                        if self.human.chips >= self.dealer.deposit//2:
-                            self.OPTIONS['DOUBLE_DOWN'] = True
-                    elif all(x in ['A'] for x in human_rank_hand) and \
-                        any(x in list(map(str, range(2, 11))) for x in dealer_rank_hand) or \
-                        all(x in ['2'] for x in human_rank_hand) and \
-                            any(x in list(map(str, range(2, 7))) for x in dealer_rank_hand) or \
-                        all(x in ['3'] for x in human_rank_hand) and \
-                            any(x in list(map(str, range(2, 7))) for x in dealer_rank_hand) or \
-                        all(x in ['4'] for x in human_rank_hand) and \
-                            any(x in list(map(str, range(4, 6))) for x in dealer_rank_hand) or \
-                        all(x in ['6'] for x in human_rank_hand) and \
-                            any(x in list(map(str, range(2, 6))) for x in dealer_rank_hand) or \
-                        all(x in ['7'] for x in human_rank_hand) and \
-                            any(x in list(map(str, range(2, 7))) for x in dealer_rank_hand) or \
-                        all(x in ['8'] for x in human_rank_hand) and \
-                            any(x in dealer_rank_hand for x in list(map(str, range(2, 9)))) or \
-                        all(x in ['9'] for x in human_rank_hand) and \
-                            any(x in (list(map(str, range(2, 6))) +
-                                list(map(str, range(7, 9)))) for x in dealer_rank_hand):
-                        self.OPTIONS['SPLIT'] = True
-                    elif dealer_rank_hand[0] == 'A' and dealer.player_hand[1].rank is None:
-                        self.OPTIONS['INSURANCE'] = True
+                    if (
+                        human.points == 9
+                        and dealer.points in list(map(int, range(3, 7)))
+                        or human.points == 10
+                        and dealer.points in list(map(int, range(2, 10)))
+                        or human.points == 11
+                        and dealer.points in list(map(int, range(2, 11)))
+                        or all(x in human_rank_hand for x in ["A", "2"])
+                        and any(x in dealer_rank_hand for x in ["5", "6"])
+                        or all(x in human_rank_hand for x in ["A", "3"])
+                        and any(x in dealer_rank_hand for x in ["5", "6"])
+                        or all(x in human_rank_hand for x in ["A", "4"])
+                        and any(x in dealer_rank_hand for x in ["4", "5", "6"])
+                        or all(x in human_rank_hand for x in ["A", "5"])
+                        and any(x in dealer_rank_hand for x in ["4", "5", "6"])
+                        or all(x in human_rank_hand for x in ["A", "6"])
+                        and any(x in dealer_rank_hand for x in ["3", "4", "5", "6"])
+                        or all(x in human_rank_hand for x in ["A", "7"])
+                        and any(x in dealer_rank_hand for x in ["3", "4", "5", "6"])
+                        or human_rank_hand == ["5", "5"]
+                    ):
+                        if self.human.chips >= self.dealer.deposit // 2:
+                            self.OPTIONS["DOUBLE_DOWN"] = True
+                    elif (
+                        all(x in ["A"] for x in human_rank_hand)
+                        and any(
+                            x in list(map(str, range(2, 11))) for x in dealer_rank_hand
+                        )
+                        or all(x in ["2"] for x in human_rank_hand)
+                        and any(
+                            x in list(map(str, range(2, 7))) for x in dealer_rank_hand
+                        )
+                        or all(x in ["3"] for x in human_rank_hand)
+                        and any(
+                            x in list(map(str, range(2, 7))) for x in dealer_rank_hand
+                        )
+                        or all(x in ["4"] for x in human_rank_hand)
+                        and any(
+                            x in list(map(str, range(4, 6))) for x in dealer_rank_hand
+                        )
+                        or all(x in ["6"] for x in human_rank_hand)
+                        and any(
+                            x in list(map(str, range(2, 6))) for x in dealer_rank_hand
+                        )
+                        or all(x in ["7"] for x in human_rank_hand)
+                        and any(
+                            x in list(map(str, range(2, 7))) for x in dealer_rank_hand
+                        )
+                        or all(x in ["8"] for x in human_rank_hand)
+                        and any(
+                            x in dealer_rank_hand for x in list(map(str, range(2, 9)))
+                        )
+                        or all(x in ["9"] for x in human_rank_hand)
+                        and any(
+                            x
+                            in (
+                                list(map(str, range(2, 6)))
+                                + list(map(str, range(7, 9)))
+                            )
+                            for x in dealer_rank_hand
+                        )
+                    ):
+                        self.OPTIONS["SPLIT"] = True
+                    elif (
+                        dealer_rank_hand[0] == "A"
+                        and dealer.player_hand[1].rank is None
+                    ):
+                        self.OPTIONS["INSURANCE"] = True
             elif human.points == 21:
-                print('BLACKJACK')
-                self.status = 'WIN'
+                self.status = "WIN"
+                # print("BLACKJACK")
             else:
-                self.status = 'LOSE'
+                self.status = "LOSE"
 
     @who_deck
     def show_cards_points(self, player):
         self.print_cards(player.player_hand)
-        print(f'{player.__class__.__name__} points was {player.points}')
+        print(f"{player.__class__.__name__} points was {player.points}")
 
     def select_option(self):
         your_option = None
-        while your_option != 'STAND' and self.human.points < 22 and \
-                your_option != 'INSURANCE' or self.human.points == 21:
+        while (
+            your_option != "STAND"
+            and self.human.points < 22
+            and your_option != "INSURANCE"
+            or self.human.points == 21
+        ):
             good_list = []
             for key, val in self.OPTIONS.items():
                 if val is True:
@@ -195,43 +229,43 @@ class Game(AbstractGame):
             if self.human.points != 21:
                 print(f'Your options is {", ".join(x for x in good_list)}')
                 your_option = str(input(""))
-                if your_option == 'HIT':
+                if your_option == "HIT":
                     self.hit()
-                elif your_option == 'STAND':
+                elif your_option == "STAND":
                     self.stand()
-                elif your_option == 'SPLIT':
+                elif your_option == "SPLIT":
                     self.split()
-                    self.OPTIONS['SPLIT'] = False
-                elif your_option == 'DOUBLE_DOWN':
+                    self.OPTIONS["SPLIT"] = False
+                elif your_option == "DOUBLE_DOWN":
                     self.double_down()
-                    self.OPTIONS['DOUBLE_DOWN'] = False
-                elif your_option == 'INSURANCE':
+                    self.OPTIONS["DOUBLE_DOWN"] = False
+                elif your_option == "INSURANCE":
                     self.insurance()
-                    self.OPTIONS['INSURANCE'] = False
+                    self.OPTIONS["INSURANCE"] = False
                 self.show_cards_points(self.human)
                 self.show_cards_points(self.dealer)
             else:
-                print('BLACKJACK')
+                self.status = "WIN"
                 break
         self.status_game(self.dealer, self.human)
 
     def status_game(self, dealer, human):
         if human.points < 21:
             if human.points > dealer.points:
-                self.status = 'WIN'
+                self.status = "WIN"
             elif human.points == dealer.points:
-                self.status = 'DRAW'
+                self.status = "DRAW"
             else:
                 if dealer.points > 21:
-                    self.status = 'WIN'
+                    self.status = "WIN"
                 else:
-                    self.status = 'LOSE'
+                    self.status = "LOSE"
         elif human.points == 21:
-            self.status = 'WIN'
+            self.status = "WIN"
         elif dealer.points == 21:
-            self.status = 'LOSE'
+            self.status = "LOSE"
         else:
-            self.status = 'LOSE'
+            self.status = "LOSE"
 
     def print_cards(self, deck):
         return [card.print_card() for card in deck]
@@ -239,8 +273,8 @@ class Game(AbstractGame):
     def new_game(self, human, dealer, deck):
         human.chips -= 100
         dealer.deposit += 100
-        print('Dealer take 100 chips to deposit next game start')
-        print(f'Now your coins you can bet : {human.chips} left')
+        print("Dealer take 100 chips to deposit next game start")
+        print(f"Now your coins you can bet : {human.chips} left")
         self.bet_chips()
         for _ in range(2):
             human.player_take_card(deck.get_card())
@@ -254,69 +288,77 @@ class Game(AbstractGame):
     def continue_game(self, human, dealer):
         human.chips -= 100
         dealer.deposit += 100
-        print('Dealer take 100 chips to deposit next game start')
-        print(f'Now your coins you can bet : {human.chips} left')
+        print("Dealer take 100 chips to deposit next game start")
+        print(f"Now your coins you can bet : {human.chips} left")
         self.options(dealer, human)
         self.select_option()
 
     def play(self):
-        print(f'Your coins : {self.human.chips}')
+        print(f"Your coins : {self.human.chips}")
         while True:
-            if self.status == 'WIN':
-                print('YOU WIN')
+            if self.status == "WIN":
+                print("YOU WIN")
                 self.human.chips += self.dealer.deposit * 2
                 self.set_all_options_default()
                 self.new_game(self.human, self.dealer, self.deck)
-            elif self.status == 'LOSE':
-                print('YOU LOSE')
+            elif self.status == "LOSE":
+                print("YOU LOSE")
                 if self.human.chips == 0 and self.dealer.deposit != 0:
-                    print('YOU WANT START NEW GAME OR END')
-                    decision = input('Take START or END ')
-                    if decision == 'END':
+                    print("YOU WANT START NEW GAME OR END")
+                    decision = input("Take START or END ")
+                    if decision == "END":
                         sys.exit(0)
-                    elif decision == 'START':
-                        print('START NEW GAME')
+                    elif decision == "START":
+                        print("START NEW GAME")
                         self.human.chips = 1000
                         self.set_all_options_default()
                         self.new_game(self.human, self.dealer, self.deck)
                     else:
-                        decision = input('Take START or END')
+                        decision = input("Take START or END")
                 else:
                     self.set_all_options_default()
                     self.new_game(self.human, self.dealer, self.deck)
 
-            elif self.status == 'DRAW':
-                print('YOU DRAW')
+            elif self.status == "DRAW":
+                print("YOU DRAW")
                 self.human.chips += self.dealer.deposit
                 self.set_all_options_default()
                 self.new_game(self.human, self.dealer, self.deck)
             elif self.status is None:
-                print('YOU NEW GAME')
+                print("YOU NEW GAME")
                 self.set_all_options_default()
                 self.new_game(self.human, self.dealer, self.deck)
-            print(f'cards in deck left: {self.deck.len_deck()}')
+            print(f"cards in deck left: {self.deck.len_deck()}")
 
     def bet_chips(self):
         """Get chips from human and add it to deposit"""
         bet_options = [0, 100, 200, 500, 1000]
         choice = None
         try:
-            while ((choice := int(input(f'Set one of options in '
-                                        f'{", ".join(map(str,bet_options[1:]))}'
-                                        f' or select 0 to stop '))) != 0):
+            while (
+                choice := int(
+                    input(
+                        f"Set one of options in "
+                        f'{", ".join(map(str,bet_options[1:]))}'
+                        f" or select 0 to stop "
+                    )
+                )
+            ) != 0:
                 if choice in bet_options:
                     if self.human.chips > choice:
                         self.human.chips -= choice
                         self.dealer.deposit += choice
-                        print(f'You still have {self.human.chips} and bet {choice}')
+                        print(f"You still have {self.human.chips} and bet {choice}")
                     else:
-                        print(f'you don\'t have so much chips {choice}')
+                        print(f"you don't have so much chips {choice}")
                 else:
-                    print(f'You can\'t bet {choice} here.')
-                print(f'You bet {self.dealer.deposit} chips and still have {self.human.chips}')
-            print(f'You finally bet {self.dealer.deposit} coins')
+                    print(f"You can't bet {choice} here.")
+                print(
+                    f"You bet {self.dealer.deposit} chips and still have {self.human.chips}"
+                )
+            print(f"You finally bet {self.dealer.deposit} coins")
         except ValueError:
-            print('Bad value')
+            print("Bad value")
             self.bet_chips()
 
     def dealer_moves(self):
