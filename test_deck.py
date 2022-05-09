@@ -13,9 +13,11 @@ def test_deck_have_52_cards():
 def test_sign_from_deck():
     deck = Deck()
     deck.create_deck()
-    cards_signs = ["".join(item.sign for item in card) for card in deck.card_deck]
-    cards_heart = list(filter(lambda symbol: symbol == '♥', cards_signs))
-    assert '♥' in cards_heart
+    # cards_signs = ["".join(item.sign for item in card) for card in deck.card_deck]
+    # cards_heart = list(filter(lambda symbol: symbol == '♥', cards_signs))
+    cards_signs = [card.sign for card in deck.card_deck]
+    cards_heart = list(filter(lambda symbol: symbol == "♥", cards_signs))
+    assert "♥" in cards_heart
     assert len(cards_heart) == 13
 
 
@@ -38,10 +40,10 @@ def test_get_card():
 def test_invalid_deck_in_create():
     with pytest.raises(InvalidCardsInDeckNumbers) as message:
         Card.SIGNS = {
-            'spades': '♠',
-            'hearts': '♥',
-            'diamonds': '♦',
+            "spades": "♠",
+            "hearts": "♥",
+            "diamonds": "♦",
         }
         deck = Deck()
         deck.create_deck()
-        assert message == f'Number of cards : {len(deck.card_deck)} is not 52'
+        assert message == f"Number of cards : {len(deck.card_deck)} is not 52"
