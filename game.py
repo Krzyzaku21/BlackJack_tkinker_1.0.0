@@ -246,7 +246,7 @@ class Game(AbstractGame):
                 self.show_cards_points(self.dealer)
             else:
                 self.status = "WIN"
-                break
+                # break
         self.status_game(self.dealer, self.human)
 
     def status_game(self, dealer, human):

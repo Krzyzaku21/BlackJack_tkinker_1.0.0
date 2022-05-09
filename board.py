@@ -536,7 +536,10 @@ class OptionsButtons(tk.Button):
         """Method stand on table"""
         self.parent.parent.end_game_flag = True
         parent = self.parent.parent.widget_frame_dealer
-        if self.panel.game.human.points < 21:
+        if self.panel.game.human.points <= 21:
+            while self.panel.game.dealer.points < 16:
+                parent.get_dealer_card()
+        else:
             while self.panel.game.dealer.points < self.panel.game.human.points:
                 parent.get_dealer_card()
         self.parent.parent.game_status()
